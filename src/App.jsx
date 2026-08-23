@@ -537,38 +537,39 @@ function Goals({ state, setState }) {
 function WantVault({ state, setState }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  
+
   const vaultItems = state.vault || [];
-  const hasDemo = vaultItems.some(i => i.id === "v1" || i.name === "Noise cancelling headphones");
-  const displayItems = hasDemo ? vaultItems : [...vaultItems, {
-    id: "v_demo",
-    name: "Noise cancelling headphones",
-    amount: 1999,
-    date: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
-    isDemo: true
-  }];
 
   const handleSave = () => {
-    if (!name) return;
-    const finalAmount = amount ? Number(amount) : 2000;
+    const trimmedName = name.trim();
+    const numericAmount = Number(amount);
+
+    // Don't create an incomplete vault item.
+    if (!trimmedName || !numericAmount || numericAmount <= 0) {
+      return;
+    }
+
     const newItem = {
-      id: "v" + Date.now(),
-      name,
-      amount: finalAmount,
-      date: new Date().toISOString()
+      id: `v${Date.now()}`,
+      name: trimmedName,
+      amount: numericAmount,
+      date: new Date().toISOString(),
     };
-    setState(s => ({
+
+    setState((s) => ({
       ...s,
-      vault: [newItem, ...(s.vault || [])]
+      vault: [newItem, ...(s.vault || [])],
     }));
+
+    // Clear the form after saving.
     setName("");
     setAmount("");
   };
 
   const deleteVaultItem = (id) => {
-    setState(s => ({
+    setState((s) => ({
       ...s,
-      vault: s.vault.filter(item => item.id !== id)
+      vault: (s.vault || []).filter((item) => item.id !== id),
     }));
   };
 
@@ -584,43 +585,100 @@ function WantVault({ state, setState }) {
         title="Want Vault"
         sub="Keep the want. Add a little space around it."
       />
+
       <div className="row g-4 mt-2">
         <div className="col-lg-7">
-          {displayItems.length === 0 && (
-            <p style={{color: 'var(--text-secondary)'}}>Your vault is empty. Save a want you're eyeing to let it cool off before buying.</p>
+          {vaultItems.length === 0 && (
+            <p style={{ color: "var(--text-secondary)" }}>
+              Your vault is empty. Save a want you're eyeing to let it cool
+              off before buying.
+            </p>
           )}
-          {displayItems.map(item => (
-            <div key={item.id} className="vault-item reveal" style={{marginBottom: '1rem'}}>
+
+          {vaultItems.map((item) => (
+            <div
+              key={item.id}
+              className="vault-item reveal"
+              style={{ marginBottom: "1rem" }}
+            >
               <div>
-                <span className="eyebrow">Cooling-off · {calculateDays(item.date)} days</span>
+                <span className="eyebrow">
+                  Cooling-off · {calculateDays(item.date)} days
+                </span>
+
                 <h2>{item.name}</h2>
-                <p style={{fontSize:'0.85rem', color:'var(--text-secondary)'}}>Still thinking about it? That's useful information.</p>
+
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Still thinking about it? That's useful information.
+                </p>
               </div>
-              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem'}}>
-                <div className="price">₹ {item.amount.toLocaleString('en-IN')}</div>
-                {!item.isDemo && (
-                  <button onClick={() => deleteVaultItem(item.id)} style={{color: 'var(--accent-primary)', fontSize: '0.85rem'}}>Remove ✕</button>
-                )}
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: "0.5rem",
+                }}
+              >
+                <div className="price">
+                  ₹ {Number(item.amount).toLocaleString("en-IN")}
+                </div>
+
+                <button
+                  onClick={() => deleteVaultItem(item.id)}
+                  style={{
+                    color: "var(--accent-primary)",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Remove ✕
+                </button>
               </div>
             </div>
           ))}
         </div>
+
         <div className="col-lg-5">
           <section className="goal-form-box reveal">
             <span className="eyebrow">Save a want</span>
-            <h2 style={{fontSize:'1.75rem', marginBottom:'1.5rem'}}>Put it in the vault.</h2>
-            <input 
-              placeholder="What are you eyeing?" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
+
+            <h2
+              style={{
+                fontSize: "1.75rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              Put it in the vault.
+            </h2>
+
+            <input
+              type="text"
+              placeholder="What are you eyeing?"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
-            <input 
-              type="number" 
-              placeholder="2000" 
-              value={amount} 
-              onChange={e => setAmount(e.target.value)} 
+
+            <input
+              type="number"
+              min="1"
+              placeholder="2000"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
             />
-            <button className="primary-button mt-2" onClick={handleSave}>Save to Want Vault</button>
+
+            <button
+              className="primary-button mt-2"
+              onClick={handleSave}
+              disabled={!name.trim() || !amount || Number(amount) <= 0}
+            >
+              Save to Want Vault
+            </button>
           </section>
         </div>
       </div>
