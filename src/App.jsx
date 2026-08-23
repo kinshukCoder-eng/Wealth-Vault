@@ -20,7 +20,8 @@ const fresh = () => JSON.parse(JSON.stringify(demoState));
 function App() {
   const [state, setState] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("wealth-vault-state-v1")) || fresh();
+      const stored = JSON.parse(localStorage.getItem("wealth-vault-state-v1"));
+      return stored ? { ...fresh(), ...stored } : fresh();
     } catch {
       return fresh();
     }
@@ -138,7 +139,7 @@ function App() {
         {page === "insights" && <Insights stats={stats} />}
         {page === "goals" && <Goals state={state} setState={setState} />}
         {page === "tools" && <Tools stats={stats} />}
-        {page === "vault" && <WantVault />}
+        {page === "vault" && <WantVault state={state} setState={setState} />}
         {page === "challenges" && <Challenges />}
         {page === "pal" && <PocketPal stats={stats} />}
       </main>
@@ -533,7 +534,49 @@ function Goals({ state, setState }) {
   );
 }
 
-function WantVault() {
+function WantVault({ state, setState }) {
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  
+  const vaultItems = state.vault || [];
+  const hasDemo = vaultItems.some(i => i.id === "v1" || i.name === "Noise cancelling headphones");
+  const displayItems = hasDemo ? vaultItems : [...vaultItems, {
+    id: "v_demo",
+    name: "Noise cancelling headphones",
+    amount: 1999,
+    date: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+    isDemo: true
+  }];
+
+  const handleSave = () => {
+    if (!name) return;
+    const finalAmount = amount ? Number(amount) : 2000;
+    const newItem = {
+      id: "v" + Date.now(),
+      name,
+      amount: finalAmount,
+      date: new Date().toISOString()
+    };
+    setState(s => ({
+      ...s,
+      vault: [newItem, ...(s.vault || [])]
+    }));
+    setName("");
+    setAmount("");
+  };
+
+  const deleteVaultItem = (id) => {
+    setState(s => ({
+      ...s,
+      vault: s.vault.filter(item => item.id !== id)
+    }));
+  };
+
+  const calculateDays = (dateStr) => {
+    const diffTime = Math.abs(new Date() - new Date(dateStr));
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   return (
     <div className="page-wrap">
       <Header
@@ -543,22 +586,41 @@ function WantVault() {
       />
       <div className="row g-4 mt-2">
         <div className="col-lg-7">
-          <div className="vault-item reveal">
-            <div>
-              <span className="eyebrow">Cooling-off · 18 days</span>
-              <h2>Noise cancelling headphones</h2>
-              <p style={{fontSize:'0.85rem', color:'var(--text-secondary)'}}>Still thinking about it? That's useful information.</p>
+          {displayItems.length === 0 && (
+            <p style={{color: 'var(--text-secondary)'}}>Your vault is empty. Save a want you're eyeing to let it cool off before buying.</p>
+          )}
+          {displayItems.map(item => (
+            <div key={item.id} className="vault-item reveal" style={{marginBottom: '1rem'}}>
+              <div>
+                <span className="eyebrow">Cooling-off · {calculateDays(item.date)} days</span>
+                <h2>{item.name}</h2>
+                <p style={{fontSize:'0.85rem', color:'var(--text-secondary)'}}>Still thinking about it? That's useful information.</p>
+              </div>
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem'}}>
+                <div className="price">₹ {item.amount.toLocaleString('en-IN')}</div>
+                {!item.isDemo && (
+                  <button onClick={() => deleteVaultItem(item.id)} style={{color: 'var(--accent-primary)', fontSize: '0.85rem'}}>Remove ✕</button>
+                )}
+              </div>
             </div>
-            <div className="price">₹ 1,999</div>
-          </div>
+          ))}
         </div>
         <div className="col-lg-5">
           <section className="goal-form-box reveal">
             <span className="eyebrow">Save a want</span>
             <h2 style={{fontSize:'1.75rem', marginBottom:'1.5rem'}}>Put it in the vault.</h2>
-            <input placeholder="What are you eyeing?" />
-            <input type="number" placeholder="2000" />
-            <button className="primary-button mt-2">Save to Want Vault</button>
+            <input 
+              placeholder="What are you eyeing?" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+            />
+            <input 
+              type="number" 
+              placeholder="2000" 
+              value={amount} 
+              onChange={e => setAmount(e.target.value)} 
+            />
+            <button className="primary-button mt-2" onClick={handleSave}>Save to Want Vault</button>
           </section>
         </div>
       </div>

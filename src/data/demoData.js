@@ -24,4 +24,7 @@ export const demoState = {
   goals: [
     { id: "g1", name: "New Phone", target: 60000, saved: 15000, monthly: 5000, emoji: "📱" },
   ],
+  vault: [
+    { id: "v1", name: "Noise cancelling headphones", amount: 1999, date: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString() }
+  ],
 };
