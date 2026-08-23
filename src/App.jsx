@@ -495,6 +495,69 @@ function Insights({ stats }) {
 }
 
 function Goals({ state, setState }) {
+  const [name, setName] = useState("");
+  const [target, setTarget] = useState("");
+
+  const goals = state.goals || [];
+
+  const handleAddGoal = () => {
+    const trimmedName = name.trim();
+    const numericTarget = Number(target);
+
+    if (!trimmedName || !numericTarget || numericTarget <= 0) {
+      return;
+    }
+
+    const newGoal = {
+      id: `g${Date.now()}`,
+      name: trimmedName,
+      target: numericTarget,
+      saved: 0,
+      monthly: 0,
+      emoji: "◌",
+    };
+
+    setState((s) => ({
+      ...s,
+      goals: [newGoal, ...(s.goals || [])],
+    }));
+
+    setName("");
+    setTarget("");
+  };
+
+  const calculateProgress = (goal) => {
+    if (!goal.target) return 0;
+
+    return Math.min(
+      100,
+      Math.round((Number(goal.saved || 0) / Number(goal.target)) * 100)
+    );
+  };
+
+  const formatMoney = (value) => {
+    return Number(value || 0).toLocaleString("en-IN");
+  };
+
+  const getGoalMessage = (goal) => {
+    const saved = Number(goal.saved || 0);
+    const monthly = Number(goal.monthly || 0);
+    const target = Number(goal.target || 0);
+
+    if (saved >= target) {
+      return "You've reached this goal. Future you says thank you.";
+    }
+
+    if (monthly > 0) {
+      const remaining = target - saved;
+      const months = Math.ceil(remaining / monthly);
+
+      return `At your current saving rate, you could get there in approximately ${months} months.`;
+    }
+
+    return "Every saved rupee brings this a little closer.";
+  };
+
   return (
     <div className="page-wrap">
       <Header
@@ -502,31 +565,91 @@ function Goals({ state, setState }) {
         title="Give your next chapter a number."
         sub="Goals turn a vague wish into a gentle monthly plan."
       />
+
       <div className="row g-4">
         <div className="col-lg-8">
-          <section className="goal-card reveal">
-            <div className="goal-symbol">◌</div>
-            <div className="goal-copy">
-              <span className="eyebrow">Target · ₹50,000</span>
-              <h2>Laptop fund</h2>
-              <p style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>At your current saving rate, you could get there in approximately 6 months.</p>
-              <div className="progress-line">
-                <i style={{ width: '36%' }}></i>
-              </div>
-              <div className="goal-meta">
-                <b>₹18,000 saved</b>
-                <span>36% complete</span>
-              </div>
-            </div>
-          </section>
+          {goals.map((goal) => {
+            const progress = calculateProgress(goal);
+
+            return (
+              <section
+                className="goal-card reveal"
+                key={goal.id}
+                style={{ marginBottom: "1rem" }}
+              >
+                <div className="goal-symbol">
+                  {goal.emoji || "◌"}
+                </div>
+
+                <div className="goal-copy">
+                  <span className="eyebrow">
+                    Target · ₹{formatMoney(goal.target)}
+                  </span>
+
+                  <h2>{goal.name}</h2>
+
+                  <p
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    {getGoalMessage(goal)}
+                  </p>
+
+                  <div className="progress-line">
+                    <i style={{ width: `${progress}%` }}></i>
+                  </div>
+
+                  <div className="goal-meta">
+                    <b>₹{formatMoney(goal.saved)} saved</b>
+                    <span>{progress}% complete</span>
+                  </div>
+                </div>
+              </section>
+            );
+          })}
         </div>
+
         <div className="col-lg-4">
           <section className="goal-form-box reveal">
             <span className="eyebrow">New intention</span>
-            <h2 style={{fontSize:'1.5rem', marginBottom:'1.5rem'}}>What are you saving for?</h2>
-            <input placeholder="e.g. A new laptop" />
-            <input type="number" placeholder="50000" />
-            <button className="primary-button" style={{width:'100%', justifyContent:'center'}}>Add goal ↗</button>
+
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              What are you saving for?
+            </h2>
+
+            <input
+              type="text"
+              placeholder="e.g. A new laptop"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+
+            <input
+              type="number"
+              min="1"
+              placeholder="50000"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+            />
+
+            <button
+              className="primary-button"
+              style={{
+                width: "100%",
+                justifyContent: "center",
+              }}
+              onClick={handleAddGoal}
+              disabled={!name.trim() || !target || Number(target) <= 0}
+            >
+              Add goal ↗
+            </button>
           </section>
         </div>
       </div>
