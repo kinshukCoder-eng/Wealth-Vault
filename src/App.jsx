@@ -526,6 +526,13 @@ function Goals({ state, setState }) {
     setTarget("");
   };
 
+  const deleteGoal = (id) => {
+  setState((s) => ({
+    ...s,
+    goals: (s.goals || []).filter((goal) => goal.id !== id),
+  }));
+  };
+
   const calculateProgress = (goal) => {
     if (!goal.target) return 0;
 
@@ -569,46 +576,55 @@ function Goals({ state, setState }) {
       <div className="row g-4">
         <div className="col-lg-8">
           {goals.map((goal) => {
-            const progress = calculateProgress(goal);
+  const progress = calculateProgress(goal);
 
-            return (
-              <section
-                className="goal-card reveal"
-                key={goal.id}
-                style={{ marginBottom: "1rem" }}
-              >
-                <div className="goal-symbol">
-                  {goal.emoji || "◌"}
-                </div>
+  return (
+    <section
+      className="goal-card reveal"
+      key={goal.id}
+      style={{ marginBottom: "1rem" }}
+    >
+      <div className="goal-symbol">
+        {goal.emoji || "◌"}
+      </div>
 
-                <div className="goal-copy">
-                  <span className="eyebrow">
-                    Target · ₹{formatMoney(goal.target)}
-                  </span>
+      <div className="goal-copy" style={{ flex: 1 }}>
+        <span className="eyebrow">
+          Target · ₹{formatMoney(goal.target)}
+        </span>
 
-                  <h2>{goal.name}</h2>
+        <h2>{goal.name}</h2>
 
-                  <p
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    {getGoalMessage(goal)}
-                  </p>
+        <p
+          style={{
+            fontSize: "0.85rem",
+            color: "var(--text-secondary)",
+          }}
+        >
+          {getGoalMessage(goal)}
+        </p>
 
-                  <div className="progress-line">
-                    <i style={{ width: `${progress}%` }}></i>
-                  </div>
+        <div className="progress-line">
+          <i style={{ width: `${progress}%` }}></i>
+        </div>
 
-                  <div className="goal-meta">
-                    <b>₹{formatMoney(goal.saved)} saved</b>
-                    <span>{progress}% complete</span>
-                  </div>
-                </div>
-              </section>
-            );
-          })}
+        <div className="goal-meta">
+          <b>₹{formatMoney(goal.saved)} saved</b>
+          <span>{progress}% complete</span>
+        </div>
+      </div>
+
+      <div className="goal-actions">
+        <button
+          className="goal-remove"
+          onClick={() => deleteGoal(goal.id)}
+        >
+          Remove ×
+        </button>
+      </div>
+    </section>
+  );
+  })}
         </div>
 
         <div className="col-lg-4">

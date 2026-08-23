@@ -937,6 +937,23 @@ main {
   font-size: 1.75rem;
   margin-bottom: 0.5rem;
 }
+
+.goal-actions {
+  display: flex;
+  align-items: flex-start;
+}
+
+.goal-remove {
+  color: var(--accent-primary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.goal-remove:hover {
+  opacity: 0.75;
+}
+
 .progress-line {
   height: 4px;
   background: var(--border-color);
