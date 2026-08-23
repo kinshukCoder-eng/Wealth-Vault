@@ -20,23 +20,27 @@ const fresh = () => JSON.parse(JSON.stringify(demoState));
 function App() {
   const [state, setState] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("pocketwise-state-v1")) || fresh();
+      return JSON.parse(localStorage.getItem("wealth-vault-state-v1")) || fresh();
     } catch {
       return fresh();
     }
   });
 
   const [theme, setTheme] = useState(
-    () => localStorage.getItem("pocketwise-theme") || "light"
+    () => localStorage.getItem("wealth-vault-theme") || "light"
   );
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(
+    () => localStorage.getItem("wealth-vault-page") || "home"
+  );
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const stats = useMemo(() => derive(state.transactions), [state.transactions]);
 
-  useEffect(() => localStorage.setItem("pocketwise-state-v1", JSON.stringify(state)), [state]);
-  useEffect(() => localStorage.setItem("pocketwise-theme", theme), [theme]);
+  useEffect(() => localStorage.setItem("wealth-vault-state-v1", JSON.stringify(state)), [state]);
+  useEffect(() => localStorage.setItem("wealth-vault-theme", theme), [theme]);
+  useEffect(() => localStorage.setItem("wealth-vault-page", page), [page]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -82,18 +86,23 @@ function App() {
   return (
     <div className="app-shell" data-theme={theme}>
       <header className="topbar">
-        <button className="brand" onClick={() => go("home")}>
-          <div className="brand-mark">₹</div>
-          <span>
-            pocketwise<small>your money, decoded</small>
-          </span>
-        </button>
-        <nav className="desktop-nav">
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+          <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <i className={`bi ${isMenuOpen ? 'bi-x' : 'bi-list'}`}></i>
+          </button>
+          <button className="brand" onClick={() => { go("home"); setIsMenuOpen(false); }}>
+            <div className="brand-mark" style={{background: '#f8a849', color: 'white', overflow: 'hidden'}}><i className="bi bi-wallet2" style={{fontSize: '1rem'}}></i></div>
+            <span>
+              Wealth Vault<small>your money, decoded</small>
+            </span>
+          </button>
+        </div>
+        <nav className={`desktop-nav ${isMenuOpen ? "open" : ""}`}>
           {nav.map(([id, label, icon]) => (
             <button
               key={id}
               className={page === id ? "active" : ""}
-              onClick={() => go(id)}
+              onClick={() => { go(id); setIsMenuOpen(false); }}
             >
               <i className={`bi ${icon}`}></i>
               {label}
@@ -131,7 +140,7 @@ function App() {
         {page === "tools" && <Tools stats={stats} />}
         {page === "vault" && <WantVault />}
         {page === "challenges" && <Challenges />}
-        {page === "pal" && <PocketPal />}
+        {page === "pal" && <PocketPal stats={stats} />}
       </main>
       {modal && (
         <TransactionModal
@@ -216,7 +225,7 @@ function Home({ stats, go }) {
           </div>
           <div className="receipt-card-home">
             <div className="receipt-top">
-              <span>POCKETWISE / 03</span>
+              <span>WEALTH VAULT / 03</span>
               <i className="bi bi-three-dots"></i>
             </div>
             <div className="receipt-balance">
@@ -594,7 +603,43 @@ function Challenges() {
   );
 }
 
-function PocketPal() {
+function PocketPal({ stats }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+
+  const handleSend = (text) => {
+    if (!text.trim()) return;
+    
+    setMessages(prev => [...prev, { text, sender: "user" }]);
+    setInput("");
+
+    setTimeout(() => {
+      let botResponse = "I'm still learning! Ask me about your spending, budget, or savings.";
+      const lower = text.toLowerCase();
+      
+      if (lower.includes("where") || lower.includes("most") || lower.includes("go")) {
+        const topCategory = Object.entries(stats.categories).sort((a,b) => b[1] - a[1])[0];
+        if (topCategory) {
+          botResponse = `Most of your money went to ${topCategory[0]} (₹${topCategory[1].toLocaleString('en-IN')}).`;
+        } else {
+          botResponse = "You haven't spent anything yet!";
+        }
+      } else if (lower.includes("afford") || lower.includes("can i")) {
+        botResponse = `You have ₹${stats.balance.toLocaleString('en-IN')} in your current balance. Your remaining budget is ₹${stats.remaining.toLocaleString('en-IN')}. Depending on your goals, a ₹3,000 purchase might be tight!`;
+      } else if (lower.includes("save")) {
+        botResponse = `If you stick to your budget, you could save around ₹${(stats.income - stats.budget).toLocaleString('en-IN')} this month.`;
+      } else if (lower.includes("balance") || lower.includes("current")) {
+        botResponse = `Your current balance is ₹${stats.balance.toLocaleString('en-IN')}.`;
+      } else if (lower.includes("too much") || lower.includes("spend")) {
+        botResponse = `You have spent ₹${stats.spending.toLocaleString('en-IN')} so far out of your ₹${stats.budget.toLocaleString('en-IN')} budget.`;
+      } else if (lower.includes("projected") || lower.includes("forecast")) {
+        botResponse = `Based on your current habits, your projected spending is ₹${stats.projected.toLocaleString('en-IN')}.`;
+      }
+
+      setMessages(prev => [...prev, { text: botResponse, sender: "bot" }]);
+    }, 600);
+  };
+
   return (
     <div className="page-wrap">
       <Header
@@ -603,19 +648,53 @@ function PocketPal() {
         sub="A structured guide to your own data. Private and local."
       />
       <div className="pal-box reveal mt-4">
-        <div className="insight-icon" style={{background:'#1c2127', color:'white', border:'none'}}><i className="bi bi-chat-square-text"></i></div>
-        <span className="eyebrow" style={{color:'#648272'}}>Pocket Pal says</span>
-        <h2>Ask me where your money went, what you can afford, or how to save this month.</h2>
+        {messages.length === 0 ? (
+          <>
+            <div className="insight-icon" style={{background:'#1c2127', color:'white', border:'none'}}><i className="bi bi-chat-square-text"></i></div>
+            <span className="eyebrow" style={{color:'rgba(0,0,0,0.6)'}}>Pocket Pal says</span>
+            <h2>Ask me where your money went, what you can afford, or how to save this month.</h2>
+          </>
+        ) : (
+          <div className="chat-history" style={{marginBottom: '2rem', maxHeight: '400px', overflowY: 'auto'}}>
+            {messages.map((msg, i) => (
+              <div key={i} style={{marginBottom: '1rem', textAlign: msg.sender === 'user' ? 'right' : 'left'}}>
+                <span style={{
+                  display: 'inline-block',
+                  background: msg.sender === 'user' ? 'var(--accent-primary)' : 'white',
+                  color: msg.sender === 'user' ? 'white' : 'var(--text-primary)',
+                  padding: '0.75rem 1.25rem',
+                  borderRadius: msg.sender === 'user' ? '12px 12px 0 12px' : '12px 12px 12px 0',
+                  border: msg.sender === 'bot' ? '1px solid rgba(0,0,0,0.1)' : 'none',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                  maxWidth: '85%',
+                  lineHeight: '1.5'
+                }}>
+                  {msg.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        
         <div className="pal-input-wrap">
-          <input placeholder="Can I afford ₹3,000?" />
-          <button className="primary-button" style={{borderRadius:'2px', padding:'0.5rem 1.25rem'}}>Ask Pal ↗</button>
+          <input 
+            placeholder="Type a message..." 
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
+          />
+          <button className="primary-button" style={{borderRadius:'2px', padding:'0.5rem 1.25rem'}} onClick={() => handleSend(input)}>Ask Pal ↗</button>
         </div>
-        <div className="pal-tags">
-          <button className="pal-tag">Where did most of my money go?</button>
-          <button className="pal-tag">Can I afford ₹3,000?</button>
-          <button className="pal-tag">How much can I save?</button>
+        
+        <div className="pal-tags" style={{flexWrap: 'wrap', marginTop: '1rem'}}>
+          <button className="pal-tag" onClick={() => handleSend("Where did most of my money go?")}>Where did most of my money go?</button>
+          <button className="pal-tag" onClick={() => handleSend("Can I afford ₹3,000?")}>Can I afford ₹3,000?</button>
+          <button className="pal-tag" onClick={() => handleSend("How much can I save?")}>How much can I save?</button>
+          <button className="pal-tag" onClick={() => handleSend("What is my current balance?")}>What is my current balance?</button>
+          <button className="pal-tag" onClick={() => handleSend("Did I spend too much?")}>Did I spend too much?</button>
+          <button className="pal-tag" onClick={() => handleSend("What's my projected spending?")}>What's my projected spending?</button>
         </div>
-        <div className="pal-footer">Local rule engine · no bank connection · future network AI NOT CONNECTED</div>
+        <div className="pal-footer mt-4">Pocket Pal is online</div>
       </div>
     </div>
   );

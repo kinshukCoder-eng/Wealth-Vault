@@ -127,12 +127,44 @@ button {
 .desktop-nav {
   display: none;
 }
+.desktop-nav.open {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: var(--surface-color);
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 99;
+}
+.mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  padding: 0.25rem;
+  color: var(--text-primary);
+}
 
-@media (min-width: 992px) {
+@media (min-width: 1250px) {
   .desktop-nav {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+  }
+  .desktop-nav.open {
+    position: static;
+    flex-direction: row;
+    width: auto;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .mobile-menu-btn {
+    display: none;
   }
 }
 
@@ -996,9 +1028,13 @@ main {
 }
 
 .pal-box {
-  background: var(--mint-panel);
-  border: 1px solid #bce1ce;
+  background: #f8a01a;
+  border: 1px solid #d98509;
   padding: 4rem;
+}
+[data-theme="dark"] .pal-box {
+  background: #e67a1c;
+  border-color: #cc6812;
 }
 .pal-box h2 {
   font-size: 2rem;
@@ -1009,12 +1045,13 @@ main {
 .pal-input-wrap {
   display: flex;
   background: white;
-  border: 1px solid #a8d5c2;
+  border: 1px solid rgba(0,0,0,0.15);
   padding: 0.5rem;
   margin-bottom: 1rem;
 }
 .pal-input-wrap input {
   flex: 1;
+  min-width: 0;
   border: none;
   padding: 0.5rem 1rem;
   outline: none;
@@ -1027,15 +1064,15 @@ main {
 }
 .pal-tag {
   background: transparent;
-  border: 1px solid #a8d5c2;
+  border: 1px solid rgba(0,0,0,0.15);
   padding: 0.4rem 0.75rem;
   font-size: 0.75rem;
-  color: #2a3b34;
+  color: #1c2127;
 }
 .pal-footer {
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  color: #648272;
+  color: rgba(0,0,0,0.6);
 }
 
 .tool-box {
@@ -1109,4 +1146,135 @@ main {
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 2rem;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+========================================= */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stat-block:nth-child(even) {
+    border-right: none !important;
+  }
+  .stat-block:nth-child(1), .stat-block:nth-child(2) {
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stat-block:nth-child(even) {
+    border-right: none !important;
+  }
+  .stat-block:nth-child(1), .stat-block:nth-child(2) {
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .pulse-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 2rem;
+  }
+  
+  .score-ring {
+    align-self: center;
+  }
+  
+  .home-steps {
+    grid-template-columns: 1fr;
+  }
+  .home-step {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .home-step:last-child {
+    border-bottom: none;
+  }
+
+  .home-bottom {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .insights-row {
+    grid-template-columns: 1fr;
+  }
+  .insight-card {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .predict-cols {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .challenge-grid {
+    grid-template-columns: 1fr;
+  }
+  .challenge-card {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .vault-item {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .tool-box {
+    grid-template-columns: 1fr;
+  }
+  
+  .topbar {
+    padding: 0.75rem 1rem;
+  }
+  .brand small {
+    display: none;
+  }
+  .pal-box {
+    padding: 2.5rem 1.5rem;
+  }
+  .pal-input-wrap button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  
+  main {
+    padding: 2rem 1rem 4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .stat-block {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+  .stat-block:last-child {
+    border-bottom: none !important;
+  }
+  .hero-copy h1 {
+    font-size: 2.5rem;
+  }
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+  .top-actions {
+    gap: 0.5rem;
+  }
+  .theme-toggle span, .add-button span {
+    display: none;
+  }
 }
