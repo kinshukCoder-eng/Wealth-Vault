@@ -376,57 +376,362 @@ function Dashboard({ stats, state, go }) {
   );
 }
 
-function Transactions({ stats, state, setState, setModal, setEditing, remove }) {
+function Transactions({
+  stats,
+  state,
+  setState,
+  setModal,
+  setEditing,
+  remove,
+}) {
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [dateFilter, setDateFilter] = useState("");
+
+  const transactions = state.transactions || [];
+
+  const formatDate = (date) => {
+    if (!date) return "";
+
+    const parsed = new Date(`${date}T00:00:00`);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return date;
+    }
+
+    return parsed.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const filteredTransactions = useMemo(() => {
+    let result = [...transactions];
+
+    // Search title, category and date.
+    const query = search.trim().toLowerCase();
+
+    if (query) {
+      result = result.filter((transaction) => {
+        return (
+          transaction.title.toLowerCase().includes(query) ||
+          transaction.category.toLowerCase().includes(query) ||
+          transaction.date.toLowerCase().includes(query)
+        );
+      });
+    }
+
+    // Category filter.
+    if (categoryFilter !== "All") {
+      result = result.filter(
+        (transaction) => transaction.category === categoryFilter
+      );
+    }
+
+    // Exact date filter.
+    if (dateFilter) {
+      result = result.filter(
+        (transaction) => transaction.date === dateFilter
+      );
+    }
+
+    // Sorting.
+    result.sort((a, b) => {
+      if (sortOrder === "newest") {
+        return new Date(b.date) - new Date(a.date);
+      }
+
+      if (sortOrder === "oldest") {
+        return new Date(a.date) - new Date(b.date);
+      }
+
+      if (sortOrder === "highest") {
+        return Number(b.amount) - Number(a.amount);
+      }
+
+      if (sortOrder === "lowest") {
+        return Number(a.amount) - Number(b.amount);
+      }
+
+      return 0;
+    });
+
+    return result;
+  }, [
+    transactions,
+    search,
+    categoryFilter,
+    sortOrder,
+    dateFilter,
+  ]);
+
+  const filteredSpending = filteredTransactions
+    .filter((transaction) => transaction.type === "expense")
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+
+  const clearFilters = () => {
+    setSearch("");
+    setCategoryFilter("All");
+    setSortOrder("newest");
+    setDateFilter("");
+  };
+
+  const handleEdit = (transaction) => {
+    setEditing(transaction);
+    setModal(true);
+  };
+
+  const handleRemove = (transaction) => {
+    const confirmed = window.confirm(
+      `Remove "${transaction.title}" from your ledger?`
+    );
+
+    if (confirmed) {
+      remove(transaction.id);
+    }
+  };
+
+  const resetTransactions = () => {
+    const confirmed = window.confirm(
+      "Reset the transaction ledger to the original demo data?"
+    );
+
+    if (!confirmed) return;
+
+    setState((current) => ({
+      ...current,
+      transactions: JSON.parse(
+        JSON.stringify(demoState.transactions)
+      ),
+    }));
+
+    clearFilters();
+  };
+
   return (
-    <div className="page-wrap">
+    <div className="page-wrap transactions-page">
       <Header
         eyebrow="Your ledger · local only"
         title="Every rupee has a receipt."
         sub="A clear, private record of where your month is going."
       />
-      <div className="ledger-toolbar reveal">
+
+      <section className="ledger-toolbar reveal">
         <div className="search-box">
           <i className="bi bi-search"></i>
-          <input placeholder="Search receipts" />
+
+          <input
+            type="search"
+            placeholder="Search receipts..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search transactions"
+          />
+
+          {search && (
+            <button
+              className="search-clear"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+            >
+              <i className="bi bi-x"></i>
+            </button>
+          )}
         </div>
-        <select><option>All</option></select>
-        <select><option>Newest</option></select>
-        <select><option>dd-mm-yyyy</option></select>
-        <button className="primary-button" onClick={() => { setEditing(null); setModal(true); }}>
-          + Add transaction
+
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          aria-label="Filter by category"
+        >
+          <option value="All">All categories</option>
+
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+          aria-label="Sort transactions"
+        >
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="highest">Highest amount</option>
+          <option value="lowest">Lowest amount</option>
+        </select>
+
+        <div className="date-filter">
+          <i className="bi bi-calendar3"></i>
+
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            aria-label="Filter by date"
+          />
+        </div>
+
+        <button
+          className="primary-button ledger-add-button"
+          onClick={() => {
+            setEditing(null);
+            setModal(true);
+          }}
+        >
+          <i className="bi bi-plus"></i>
+          Add transaction
         </button>
-        <button className="text-button">Reset demo</button>
-      </div>
+
+        <button
+          className="text-button ledger-reset-button"
+          onClick={resetTransactions}
+        >
+          Reset demo
+        </button>
+      </section>
+
       <section className="ledger reveal">
         <div className="ledger-summary">
-          <span>10 receipts shown</span>
-          <strong>₹15,120 <small style={{fontSize: '0.65rem', fontFamily:'var(--font-mono)'}}>spent this month</small></strong>
-        </div>
-        {[
-          ["Coffee runs", "Food", "2026-03-18", 1570, "expense"],
-          ["Movie night", "Entertainment", "2026-03-16", 520, "expense"],
-          ["Sneakers", "Shopping", "2026-03-14", 2400, "expense"],
-          ["Streaming stack", "Subscription", "2026-03-11", 600, "expense"],
-          ["Food delivery", "Food", "2026-03-10", 700, "expense"],
-          ["Design course", "Education", "2026-03-08", 2000, "expense"],
-          ["Metro card", "Transport", "2026-03-05", 990, "expense"],
-          ["Groceries", "Food", "2026-03-04", 1450, "expense"],
-          ["Hostel + utilities", "Bills", "2026-03-02", 5280, "expense"],
-          ["Campus stipend", "Income", "2026-03-01", 20000, "income"]
-        ].map(([title, cat, date, amt, type], i) => (
-          <div key={i} className="ledger-item">
-            <span className="category-icon" style={type === 'income' ? {background:'#dcfce7', color:'#166534'} : {background:'#fce7e7', color:'var(--accent-primary)'}}>
-              <i className={`bi ${type === 'income' ? 'bi-check2' : 'bi-arrow-up-right'}`}></i>
+          <div>
+            <span className="ledger-count">
+              {filteredTransactions.length}{" "}
+              {filteredTransactions.length === 1
+                ? "receipt"
+                : "receipts"}{" "}
+              shown
             </span>
-            <div className="ledger-main">
-              <strong>{title}</strong>
-              <small>{cat} · {date}</small>
-            </div>
-            <b style={type === 'income' ? {color: '#166534'} : {}}>{type === 'income' ? '+' : '-'}₹{amt.toLocaleString('en-IN')}</b>
-            <i className="bi bi-pencil" style={{color:'var(--text-secondary)'}}></i>
-            <i className="bi bi-trash3" style={{color:'var(--text-secondary)'}}></i>
+
+            {(search ||
+              categoryFilter !== "All" ||
+              dateFilter) && (
+              <button
+                className="clear-filters"
+                onClick={clearFilters}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
-        ))}
+
+          <div className="ledger-total">
+            <small>filtered spending</small>
+            <strong>{money(filteredSpending)}</strong>
+          </div>
+        </div>
+
+        {filteredTransactions.length > 0 ? (
+          <div className="ledger-list">
+            {filteredTransactions.map((transaction) => {
+              const isIncome = transaction.type === "income";
+
+              return (
+                <article
+                  key={transaction.id}
+                  className={`ledger-item ${
+                    isIncome ? "is-income" : "is-expense"
+                  }`}
+                >
+                  <span
+                    className={`category-icon ${
+                      isIncome
+                        ? "income-icon"
+                        : "expense-icon"
+                    }`}
+                  >
+                    <i
+                      className={`bi ${
+                        isIncome
+                          ? "bi-arrow-down-left"
+                          : "bi-arrow-up-right"
+                      }`}
+                    ></i>
+                  </span>
+
+                  <div className="ledger-main">
+                    <strong>{transaction.title}</strong>
+
+                    <div className="ledger-meta">
+                      <span>{transaction.category}</span>
+                      <span>·</span>
+                      <span>{formatDate(transaction.date)}</span>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`ledger-amount ${
+                      isIncome
+                        ? "income-amount"
+                        : "expense-amount"
+                    }`}
+                  >
+                    {isIncome ? "+" : "−"}
+                    {money(transaction.amount)}
+                  </div>
+
+                  <div className="ledger-actions">
+                    <button
+                      className="ledger-action"
+                      onClick={() => handleEdit(transaction)}
+                      aria-label={`Edit ${transaction.title}`}
+                      title="Edit transaction"
+                    >
+                      <i className="bi bi-pencil"></i>
+                    </button>
+
+                    <button
+                      className="ledger-action ledger-delete"
+                      onClick={() =>
+                        handleRemove(transaction)
+                      }
+                      aria-label={`Delete ${transaction.title}`}
+                      title="Delete transaction"
+                    >
+                      <i className="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="ledger-empty">
+            <div className="ledger-empty-icon">
+              <i className="bi bi-receipt"></i>
+            </div>
+
+            <h3>No receipts found.</h3>
+
+            <p>
+              Try changing your filters or add a new
+              transaction to your ledger.
+            </p>
+
+            <div className="ledger-empty-actions">
+              <button
+                className="text-button"
+                onClick={clearFilters}
+              >
+                Clear filters
+              </button>
+
+              <button
+                className="primary-button"
+                onClick={() => {
+                  setEditing(null);
+                  setModal(true);
+                }}
+              >
+                + Add transaction
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );
@@ -1219,16 +1524,22 @@ function TransactionModal({ initial, onClose, onSave }) {
   const [date, setDate] = useState(initial ? initial.date : new Date().toISOString().split("T")[0]);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title || !amount) return;
-    onSave({
-      title,
-      amount: Number(amount),
-      category,
-      type,
-      date,
-    });
-  };
+  e.preventDefault();
+
+  const numericAmount = Number(amount);
+
+  if (!title.trim() || !numericAmount || numericAmount <= 0) {
+    return;
+  }
+
+  onSave({
+    title: title.trim(),
+    amount: numericAmount,
+    category,
+    type,
+    date,
+  });
+};
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -1241,7 +1552,15 @@ function TransactionModal({ initial, onClose, onSave }) {
           </div>
           <div className="form-group">
             <label>Amount (₹)</label>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" required />
+            <input
+            type="number"
+            min="0"
+            step="1"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            required
+            />
           </div>
           <div className="form-group">
             <label>Category</label>
