@@ -966,6 +966,35 @@ function PocketPal({ stats }) {
 }
 
 function Tools({ stats }) {
+  const [whatIfAmount, setWhatIfAmount] = useState(3000);
+  const [purchaseAmount, setPurchaseAmount] = useState(800);
+  const [hourlyRate, setHourlyRate] = useState(100);
+
+  const safeWhatIfAmount = Math.max(0, Number(whatIfAmount) || 0);
+  const safePurchaseAmount = Math.max(0, Number(purchaseAmount) || 0);
+  const safeHourlyRate = Math.max(0, Number(hourlyRate) || 0);
+
+  // What-If calculations
+  const newBalance = stats.balance - safeWhatIfAmount;
+
+  const budgetImpact =
+    stats.budget > 0
+      ? (safeWhatIfAmount / stats.budget) * 100
+      : 0;
+
+  const newRemainingBudget =
+    stats.remaining - safeWhatIfAmount;
+
+  // Money → Time calculation
+  const workHours =
+    safeHourlyRate > 0
+      ? safePurchaseAmount / safeHourlyRate
+      : 0;
+
+  const handleThinkAgain = () => {
+    setWhatIfAmount(400);
+  };
+
   return (
     <div className="page-wrap">
       <Header
@@ -973,53 +1002,210 @@ function Tools({ stats }) {
         title="Try the decision on first."
         sub="A small pause can make the future feel more visible."
       />
+
       <div className="row g-4 mt-2 reveal">
+
+        {/* =========================
+            WALLET WHAT-IF
+        ========================= */}
         <div className="col-lg-6">
           <div className="tool-box">
-            <div style={{gridColumn: '1 / -1'}}>
+
+            <div style={{ gridColumn: "1 / -1" }}>
               <span className="eyebrow">Wallet What-If</span>
-              <h2>What if I spend ₹3,000?</h2>
-              <div className="progress-line"><i style={{width:'30%'}}></i></div>
+
+              <h2 className="what-if-title">
+              What if I spend {money(safeWhatIfAmount)}?
+              </h2>
+
+              <div className="what-if-input-wrap">
+              <span>₹</span>
+
+              <input
+                type="number"
+                min="0"
+                value={whatIfAmount}
+                onChange={(e) => setWhatIfAmount(e.target.value)}
+                placeholder="3000"
+                aria-label="What-if spending amount"
+              />
+              </div>
+
+              <div className="progress-line">
+                <i
+                  style={{
+                    width: `${Math.min(100, budgetImpact)}%`,
+                  }}
+                ></i>
+              </div>
             </div>
+
             <div>
               <span className="eyebrow">New balance</span>
-              <strong style={{fontSize:'1.5rem', fontFamily:'var(--font-serif)'}}>₹1,580</strong>
+
+              <strong
+                style={{
+                  fontSize: "1.5rem",
+                  fontFamily: "var(--font-serif)",
+                  color:
+                    newBalance < 0
+                      ? "var(--accent-primary)"
+                      : "var(--text-primary)",
+                }}
+              >
+                {money(newBalance)}
+              </strong>
             </div>
+
             <div>
               <span className="eyebrow">Budget impact</span>
-              <strong style={{fontSize:'1.5rem', fontFamily:'var(--font-serif)'}}>25%</strong>
+
+              <strong
+                style={{
+                  fontSize: "1.5rem",
+                  fontFamily: "var(--font-serif)",
+                }}
+              >
+                {Math.round(budgetImpact)}%
+              </strong>
             </div>
-            <div style={{gridColumn: '1 / -1'}}>
-              <span className="eyebrow">Savings impact</span>
-              <strong style={{fontSize:'1.5rem', fontFamily:'var(--font-serif)'}}>₹3,000</strong>
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <span className="eyebrow">
+                Remaining budget
+              </span>
+
+              <strong
+                style={{
+                  fontSize: "1.5rem",
+                  fontFamily: "var(--font-serif)",
+                  color:
+                    newRemainingBudget < 0
+                      ? "var(--accent-primary)"
+                      : "var(--text-primary)",
+                }}
+              >
+                {money(newRemainingBudget)}
+              </strong>
             </div>
+
           </div>
         </div>
+
+
+        {/* =========================
+            MONEY → TIME
+        ========================= */}
         <div className="col-lg-6">
           <div className="tool-box dark">
-            <div style={{gridColumn: '1 / -1'}}>
+
+            <div style={{ gridColumn: "1 / -1" }}>
               <span className="eyebrow">Money → Time</span>
-              <h2>What does a purchase cost in hours?</h2>
-              <input type="number" defaultValue="100" />
+
+              <h2>
+                What does a purchase cost in hours?
+              </h2>
+
+              <label className="tool-input-label">
+                Purchase amount
+              </label>
+
+              <input
+              type="number"
+              min="0"
+              value={whatIfAmount}
+              onChange={(e) => setWhatIfAmount(e.target.value)}
+              placeholder="3000"
+              aria-label="What-if spending amount"
+              />
+
+              <label className="tool-input-label">
+                Hourly earning rate
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                value={hourlyRate}
+                onChange={(e) =>
+                  setHourlyRate(e.target.value)
+                }
+                placeholder="100"
+                aria-label="Hourly earning rate"
+              />
             </div>
-            <div style={{gridColumn: '1 / -1'}}>
-              <strong style={{fontSize:'2.5rem', fontFamily:'var(--font-serif)', color:'var(--accent-primary)'}}>8.0 hrs</strong>
-              <div style={{fontSize:'0.75rem', fontFamily:'var(--font-mono)', color:'#9ca3af', marginTop:'0.5rem'}}>for an ₹800 purchase at ₹100/hour</div>
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <strong
+                style={{
+                  fontSize: "2.5rem",
+                  fontFamily: "var(--font-serif)",
+                  color: "var(--accent-primary)",
+                }}
+              >
+                {workHours.toFixed(1)} hrs
+              </strong>
+
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  fontFamily: "var(--font-mono)",
+                  color: "#9ca3af",
+                  marginTop: "0.5rem",
+                }}
+              >
+                for an {money(safePurchaseAmount)} purchase
+                {" "}at {money(safeHourlyRate)}/hour
+              </div>
             </div>
+
           </div>
         </div>
+
+
+        {/* =========================
+            SPENDLESS
+        ========================= */}
         <div className="col-lg-12">
           <div className="tool-box green mt-2">
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "2rem",
+              }}
+            >
               <div>
                 <span className="eyebrow">Spendless</span>
-                <h2>Think with your future self.</h2>
-                <p style={{fontSize:'0.85rem'}}>If you trim your next food order by ₹400, you preserve that money for your laptop fund. No shame, just information.</p>
+
+                <h2>
+                  Think with your future self.
+                </h2>
+
+                <p style={{ fontSize: "0.85rem" }}>
+                  If you trim your next food order by ₹400,
+                  you preserve that money for your goals.
+                  No shame, just information.
+                </p>
               </div>
-              <button className="primary-button" style={{background:'var(--accent-primary)'}}>Think again →</button>
+
+              <button
+                className="primary-button"
+                style={{
+                  background: "var(--accent-primary)",
+                  whiteSpace: "nowrap",
+                }}
+                onClick={handleThinkAgain}
+              >
+                Think again →
+              </button>
             </div>
+
           </div>
         </div>
+
       </div>
     </div>
   );
