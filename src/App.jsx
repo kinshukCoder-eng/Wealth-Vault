@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import "./index.css";
 import { demoState, categories, money } from "./data/demoData";
 import { derive } from "./utils/calculations";
@@ -606,6 +606,11 @@ function Challenges() {
 function PocketPal({ stats }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = (text) => {
     if (!text.trim()) return;
@@ -661,7 +666,7 @@ function PocketPal({ stats }) {
                 <span style={{
                   display: 'inline-block',
                   background: msg.sender === 'user' ? 'var(--accent-primary)' : 'white',
-                  color: msg.sender === 'user' ? 'white' : 'var(--text-primary)',
+                  color: msg.sender === 'user' ? 'white' : '#1c2127',
                   padding: '0.75rem 1.25rem',
                   borderRadius: msg.sender === 'user' ? '12px 12px 0 12px' : '12px 12px 12px 0',
                   border: msg.sender === 'bot' ? '1px solid rgba(0,0,0,0.1)' : 'none',
@@ -673,6 +678,7 @@ function PocketPal({ stats }) {
                 </span>
               </div>
             ))}
+            <div ref={chatEndRef} />
           </div>
         )}
         
