@@ -1862,3 +1862,47 @@ main {
   appearance: textfield;
   -moz-appearance: textfield;
 }
+
+/* =========================================
+   ACCESSIBILITY & NOTIFICATIONS
+========================================= */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-item {
+  animation: toastFadeIn 0.25s ease-out;
+}
+
+.challenge-card.is-inactive {
+  opacity: 0.65;
+  filter: grayscale(0.2);
+}
+
+.challenge-card.is-inactive:hover {
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
